@@ -53,6 +53,50 @@ $stmt = $conn->prepare("SELECT * FROM pause_settings ORDER BY hours_threshold AS
 $stmt->execute();
 $pauseSettings = $stmt->fetchAll(PDO::FETCH_OBJ);
 
+// Feiertage Bundesland aus der Datenbank abrufen
+$stmt = $conn->prepare("SELECT setting_value FROM feiertage_settings WHERE setting_key = 'feiertage_land'");
+$stmt->execute();
+$feiertageLand = $stmt->fetchColumn();
+if (!$feiertageLand) {
+    $feiertageLand = 'SH'; // Default
+}
+
+// Feiertage Bundesland aktualisieren
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_feiertage_land'])) {
+    $newLand = $_POST['feiertage_land'];
+    
+    // Validate the input to ensure it's one of the allowed Bundesland codes
+    $validLands = ['BW', 'BY', 'BE', 'BB', 'HB', 'HH', 'HE', 'MV', 'NI', 'NW', 'RP', 'SL', 'SN', 'ST', 'SH', 'TH', 'NATIONAL'];
+    
+    if (!in_array($newLand, $validLands, true)) {
+        $error = "Ungültiger Bundesland-Code.";
+    } else {
+        try {
+            // Check if setting exists
+            $stmt = $conn->prepare("SELECT COUNT(*) as count FROM feiertage_settings WHERE setting_key = 'feiertage_land'");
+            $stmt->execute();
+            $exists = $stmt->fetchColumn();
+            
+            if ($exists > 0) {
+                // Update existing setting
+                $stmt = $conn->prepare("UPDATE feiertage_settings SET setting_value = ? WHERE setting_key = 'feiertage_land'");
+                $stmt->execute([$newLand]);
+            } else {
+                // Insert new setting
+                $stmt = $conn->prepare("INSERT INTO feiertage_settings (setting_key, setting_value) VALUES ('feiertage_land', ?)");
+                $stmt->execute([$newLand]);
+            }
+            
+            $successMessage = "Feiertage Bundesland erfolgreich aktualisiert.";
+            $feiertageLand = $newLand; // Update the variable for display
+            header("Location: admin.php");
+            exit();
+        } catch (PDOException $e) {
+            $error = "Fehler beim Aktualisieren des Feiertage Bundeslandes: " . $e->getMessage();
+        }
+    }
+}
+
 // Pauseneinstellungen aktualisieren
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_pause_settings'])) {
     $hoursThresholds = $_POST['hours_threshold'];
@@ -693,6 +737,44 @@ include 'header.php';
                 </div>
             </div>
 
+            <!-- Feiertage Bundesland -->
+            <div id="feiertage-settings" class="card bg-base-100 shadow-xl mb-8">
+                <div class="card-body">
+                    <h2 class="card-title text-2xl mb-4">Feiertage Bundesland</h2>
+                    <p class="mb-4">Wählen Sie das Bundesland für die automatische Feiertage-Synchronisation.</p>
+                    <form method="post" class="space-y-4">
+                        <input type="hidden" name="update_feiertage_land" value="1">
+                        <div class="form-control">
+                            <label class="label" for="feiertage_land">
+                                <span class="label-text">Bundesland</span>
+                            </label>
+                            <select name="feiertage_land" id="feiertage_land" class="select select-bordered w-full">
+                                <option value="BW" <?= $feiertageLand == 'BW' ? 'selected' : '' ?>>Baden-Württemberg (BW)</option>
+                                <option value="BY" <?= $feiertageLand == 'BY' ? 'selected' : '' ?>>Bayern (BY)</option>
+                                <option value="BE" <?= $feiertageLand == 'BE' ? 'selected' : '' ?>>Berlin (BE)</option>
+                                <option value="BB" <?= $feiertageLand == 'BB' ? 'selected' : '' ?>>Brandenburg (BB)</option>
+                                <option value="HB" <?= $feiertageLand == 'HB' ? 'selected' : '' ?>>Bremen (HB)</option>
+                                <option value="HH" <?= $feiertageLand == 'HH' ? 'selected' : '' ?>>Hamburg (HH)</option>
+                                <option value="HE" <?= $feiertageLand == 'HE' ? 'selected' : '' ?>>Hessen (HE)</option>
+                                <option value="MV" <?= $feiertageLand == 'MV' ? 'selected' : '' ?>>Mecklenburg-Vorpommern (MV)</option>
+                                <option value="NI" <?= $feiertageLand == 'NI' ? 'selected' : '' ?>>Niedersachsen (NI)</option>
+                                <option value="NW" <?= $feiertageLand == 'NW' ? 'selected' : '' ?>>Nordrhein-Westfalen (NW)</option>
+                                <option value="RP" <?= $feiertageLand == 'RP' ? 'selected' : '' ?>>Rheinland-Pfalz (RP)</option>
+                                <option value="SL" <?= $feiertageLand == 'SL' ? 'selected' : '' ?>>Saarland (SL)</option>
+                                <option value="SN" <?= $feiertageLand == 'SN' ? 'selected' : '' ?>>Sachsen (SN)</option>
+                                <option value="ST" <?= $feiertageLand == 'ST' ? 'selected' : '' ?>>Sachsen-Anhalt (ST)</option>
+                                <option value="SH" <?= $feiertageLand == 'SH' ? 'selected' : '' ?>>Schleswig-Holstein (SH)</option>
+                                <option value="TH" <?= $feiertageLand == 'TH' ? 'selected' : '' ?>>Thüringen (TH)</option>
+                                <option value="NATIONAL" <?= $feiertageLand == 'NATIONAL' ? 'selected' : '' ?>>Bundesweit (NATIONAL)</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save mr-2"></i><?= BUTTON_SAVE_CHANGES ?>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
             <!-- Pauseneinstellungen -->
             <div id="pause-settings" class="card bg-base-100 shadow-xl mb-8">
                 <div class="card-body">
@@ -764,6 +846,7 @@ include 'header.php';
                 <li><a href="#user-management"><i class="fas fa-users mr-2"></i><?= USER_MANAGEMENT_TITLE ?></a></li>
                 <li><a href="#department-management"><i class="fas fa-building mr-2"></i><?= DEPARTMENT_MANAGEMENT_TITLE ?></a></li>
                 <li><a href="#ldap-sync"><i class="fas fa-sync mr-2"></i><?= LDAP_SYNC_TITLE ?></a></li>
+                <li><a href="#feiertage-settings"><i class="fas fa-calendar-day mr-2"></i>Feiertage Bundesland</a></li>
                 <li><a href="#pause-settings"><i class="fas fa-coffee mr-2"></i><?= PAUSE_SETTINGS_TITLE ?></a></li>
                 <li><a href="#api-access"><i class="fas fa-key mr-2"></i><?= API_ACCESS_TITLE ?></a></li>
             </ul>
