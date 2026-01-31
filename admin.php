@@ -65,28 +65,35 @@ if (!$feiertageLand) {
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_feiertage_land'])) {
     $newLand = $_POST['feiertage_land'];
     
-    try {
-        // Check if setting exists
-        $stmt = $conn->prepare("SELECT COUNT(*) as count FROM system_settings WHERE setting_key = 'feiertage_land'");
-        $stmt->execute();
-        $exists = $stmt->fetchColumn();
-        
-        if ($exists > 0) {
-            // Update existing setting
-            $stmt = $conn->prepare("UPDATE system_settings SET setting_value = ? WHERE setting_key = 'feiertage_land'");
-            $stmt->execute([$newLand]);
-        } else {
-            // Insert new setting
-            $stmt = $conn->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES ('feiertage_land', ?)");
-            $stmt->execute([$newLand]);
+    // Validate the input to ensure it's one of the allowed Bundesland codes
+    $validLands = ['BW', 'BY', 'BE', 'BB', 'HB', 'HH', 'HE', 'MV', 'NI', 'NW', 'RP', 'SL', 'SN', 'ST', 'SH', 'TH', 'NATIONAL'];
+    
+    if (!in_array($newLand, $validLands, true)) {
+        $error = "Ungültiger Bundesland-Code.";
+    } else {
+        try {
+            // Check if setting exists
+            $stmt = $conn->prepare("SELECT COUNT(*) as count FROM system_settings WHERE setting_key = 'feiertage_land'");
+            $stmt->execute();
+            $exists = $stmt->fetchColumn();
+            
+            if ($exists > 0) {
+                // Update existing setting
+                $stmt = $conn->prepare("UPDATE system_settings SET setting_value = ? WHERE setting_key = 'feiertage_land'");
+                $stmt->execute([$newLand]);
+            } else {
+                // Insert new setting
+                $stmt = $conn->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES ('feiertage_land', ?)");
+                $stmt->execute([$newLand]);
+            }
+            
+            $successMessage = "Feiertage Bundesland erfolgreich aktualisiert.";
+            $feiertageLand = $newLand; // Update the variable for display
+            header("Location: admin.php");
+            exit();
+        } catch (PDOException $e) {
+            $error = "Fehler beim Aktualisieren des Feiertage Bundeslandes: " . $e->getMessage();
         }
-        
-        $successMessage = "Feiertage Bundesland erfolgreich aktualisiert.";
-        $feiertageLand = $newLand; // Update the variable for display
-        header("Location: " . $_SERVER['PHP_SELF']);
-        exit();
-    } catch (PDOException $e) {
-        $error = "Fehler beim Aktualisieren des Feiertage Bundeslandes: " . $e->getMessage();
     }
 }
 
