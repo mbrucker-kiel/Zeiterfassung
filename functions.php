@@ -205,8 +205,8 @@ function fetchFeiertageDB($jahr)
         return;
     }
 
-    // Get feiertage_land setting from system_settings, default to 'SH' if not found
-    $stmt = $conn->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'feiertage_land'");
+    // Get feiertage_land setting from feiertage_settings, default to 'SH' if not found
+    $stmt = $conn->prepare("SELECT setting_value FROM feiertage_settings WHERE setting_key = 'feiertage_land'");
     $stmt->execute();
     $feiertageLand = $stmt->fetchColumn();
     if (!$feiertageLand) {

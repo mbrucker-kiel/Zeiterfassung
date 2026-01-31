@@ -54,7 +54,7 @@ $stmt->execute();
 $pauseSettings = $stmt->fetchAll(PDO::FETCH_OBJ);
 
 // Feiertage Bundesland aus der Datenbank abrufen
-$stmt = $conn->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'feiertage_land'");
+$stmt = $conn->prepare("SELECT setting_value FROM feiertage_settings WHERE setting_key = 'feiertage_land'");
 $stmt->execute();
 $feiertageLand = $stmt->fetchColumn();
 if (!$feiertageLand) {
@@ -73,17 +73,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_feiertage_land'
     } else {
         try {
             // Check if setting exists
-            $stmt = $conn->prepare("SELECT COUNT(*) as count FROM system_settings WHERE setting_key = 'feiertage_land'");
+            $stmt = $conn->prepare("SELECT COUNT(*) as count FROM feiertage_settings WHERE setting_key = 'feiertage_land'");
             $stmt->execute();
             $exists = $stmt->fetchColumn();
             
             if ($exists > 0) {
                 // Update existing setting
-                $stmt = $conn->prepare("UPDATE system_settings SET setting_value = ? WHERE setting_key = 'feiertage_land'");
+                $stmt = $conn->prepare("UPDATE feiertage_settings SET setting_value = ? WHERE setting_key = 'feiertage_land'");
                 $stmt->execute([$newLand]);
             } else {
                 // Insert new setting
-                $stmt = $conn->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES ('feiertage_land', ?)");
+                $stmt = $conn->prepare("INSERT INTO feiertage_settings (setting_key, setting_value) VALUES ('feiertage_land', ?)");
                 $stmt->execute([$newLand]);
             }
             

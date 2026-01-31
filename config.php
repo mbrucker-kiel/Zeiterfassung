@@ -81,9 +81,9 @@ SQL;
     );
 SQL;
 
-    // SQL for creating 'system_settings' table
-    $createSystemSettingsSql = <<<SQL
-    CREATE TABLE IF NOT EXISTS system_settings (
+    // SQL for creating 'feiertage_settings' table
+    $createFeiertageSettingsSql = <<<SQL
+    CREATE TABLE IF NOT EXISTS feiertage_settings (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         setting_key TEXT NOT NULL UNIQUE,
         setting_value TEXT NOT NULL
@@ -97,7 +97,7 @@ SQL;
     $conn->exec($createDepartmentsSql);
     $conn->exec($createLdapSettingsSql);
     $conn->exec($createPauseSettingsSql);
-    $conn->exec($createSystemSettingsSql);
+    $conn->exec($createFeiertageSettingsSql);
 
     // Check if pause_settings table is empty and insert default values if needed
     $pauseSettingsCount = $conn->query("SELECT COUNT(*) as count FROM pause_settings")->fetch()->count;
@@ -105,10 +105,10 @@ SQL;
         $conn->exec("INSERT INTO pause_settings (hours_threshold, minimum_pause) VALUES (6, 30), (9, 45)");
     }
 
-    // Check if system_settings table has feiertage_land and insert default value if needed
-    $feiertageLandExists = $conn->query("SELECT COUNT(*) as count FROM system_settings WHERE setting_key = 'feiertage_land'")->fetch()->count;
+    // Check if feiertage_settings table has feiertage_land and insert default value if needed
+    $feiertageLandExists = $conn->query("SELECT COUNT(*) as count FROM feiertage_settings WHERE setting_key = 'feiertage_land'")->fetch()->count;
     if ($feiertageLandExists == 0) {
-        $conn->exec("INSERT INTO system_settings (setting_key, setting_value) VALUES ('feiertage_land', 'SH')");
+        $conn->exec("INSERT INTO feiertage_settings (setting_key, setting_value) VALUES ('feiertage_land', 'SH')");
     }
 
     $result = $conn->query("PRAGMA table_info(users)")->fetchAll();
