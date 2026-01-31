@@ -205,7 +205,15 @@ function fetchFeiertageDB($jahr)
         return;
     }
 
-    $url = "https://feiertage-api.de/api/?jahr=" . urlencode($jahr) . "&nur_land=BW";
+    // Get feiertage_land setting from system_settings, default to 'SH' if not found
+    $stmt = $conn->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'feiertage_land'");
+    $stmt->execute();
+    $feiertageLand = $stmt->fetchColumn();
+    if (!$feiertageLand) {
+        $feiertageLand = 'SH';
+    }
+
+    $url = "https://feiertage-api.de/api/?jahr=" . urlencode($jahr) . "&nur_land=" . urlencode($feiertageLand);
     $json = file_get_contents($url);
     if ($json === false) {
         throw new Exception("Error fetching holiday data.");
